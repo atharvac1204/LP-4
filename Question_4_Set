@@ -1,0 +1,272 @@
+4A:
+
+ %pip install gensim
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.models import Sequential
+from gensim.models import Word2Vec
+
+data=pd.read_csv("/content/sample_data/IMDB Dataset.csv")
+
+data.columns
+
+x=data['review']
+y=data['sentiment'].map({'positive':1,'negative':0})
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.1,random_state=42)
+
+##Convert the review into words.
+
+train_word=[review.lower().split() for review in x_train]
+test_word=[review.lower().split() for review in x_test]
+
+##Creating the CBOW
+
+cbow=Word2Vec(
+    sentences=train_word,
+    vector_size=100,
+    window=5,
+    min_count=1,
+    sg=0,
+    epochs=5
+)
+
+
+print("Vocabulary size: ",len(cbow.wv))
+
+##Converting to vectors.
+
+x_train_embed=np.array([
+    cbow.wv.get_mean_vector(words) for words in train_word
+])
+
+x_test_embed=np.array([
+    cbow.wv.get_mean_vector(words) for words in test_word
+])
+
+##Building Neural network
+
+model=Sequential([
+    Dense(64,activation='relu',input_shape=(100,)),
+    Dense(32,activation='relu'),
+    Dense(1,activation='sigmoid')
+])
+
+model.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+
+history=model.fit(
+    x_train_embed,y_train,
+    validation_data=(x_test_embed,y_test),
+    epochs=5,
+    batch_size=64,
+    validation_split=0.2
+)
+
+##Evaluation
+
+loss,accuracy=model.evaluate(x_test_embed,y_test)
+print("Test Loss:", loss)
+print("Test Accuracy:", accuracy)
+
+##plot
+
+plt.plot(history.history['accuracy'],label='accuracy')
+plt.plot(history.history['val_accuracy'],label='val_accuracy')
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+
+
+4B:
+
+# 1. Import libraries
+import pandas as pd
+import re
+from gensim.models import Word2Vec
+
+# 2. Load dataset
+df = pd.read_csv("twitter_dataset.csv")
+
+# 3. Remove empty tweets
+df = df.dropna(subset=["Text"])
+
+# 4. Clean tweets
+tweets = []
+
+for tweet in df["Text"]:
+    tweet = tweet.lower()
+    tweet = re.sub(r"[^a-z\s]", "", tweet)
+    tweets.append(tweet.split())
+
+print(tweets[0])
+
+# 5. Train CBOW Word2Vec model
+cbow = Word2Vec(
+    sentences=tweets,
+    vector_size=100,
+    window=5,
+    min_count=2,
+    sg=0,
+    epochs=10
+)
+
+# 6. Display vocabulary size
+print("Vocabulary size:", len(cbow.wv))
+
+# 7. Get a word from vocabulary
+word = cbow.wv.index_to_key[0]
+
+print("Word:", word)
+
+# 8. Display word embedding
+print("Embedding:", cbow.wv[word][:10])
+
+# 9. Display 5 similar words
+print("Similar words:", cbow.wv.most_similar(word, topn=5))
+
+# 10. Find similarity between two words
+word1 = cbow.wv.index_to_key[0]
+word2 = cbow.wv.index_to_key[1]
+
+print("Similarity:", cbow.wv.similarity(word1, word2))
+
+
+
+4C:
+
+# 1. Import libraries
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Lambda, Dense
+
+# 2. Sample sentences
+sentences = [
+    "I love machine learning",
+    "I love deep learning",
+    "machine learning is interesting",
+    "deep learning is powerful"
+]
+
+# 3. Tokenize sentences
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(sentences)
+
+vocab_size = len(tokenizer.word_index) + 1
+
+# 4. Convert sentences into sequences
+sequences = tokenizer.texts_to_sequences(sentences)
+
+# 5. Create context and target words
+X = []
+y = []
+
+for sequence in sequences:
+    for i in range(1, len(sequence)-1):
+        context = [sequence[i-1], sequence[i+1]]
+        target = sequence[i]
+
+        X.append(context)
+        y.append(target)
+
+X = np.array(X)
+y = np.array(y)
+
+# 6. Build CBOW model
+model = Sequential()
+
+model.add(Embedding(vocab_size, 10, input_length=2))
+model.add(Lambda(lambda x: tf.reduce_mean(x, axis=1)))
+model.add(Dense(vocab_size, activation='softmax'))
+
+# 7. Compile model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# 8. Train model
+model.fit(X, y, epochs=100, verbose=1)
+
+# 9. Display results
+print("Vocabulary:", tokenizer.word_index)
+print("Context words:", X)
+print("Target words:", y)
+
+4D:
+
+# 1. Import libraries
+import pandas as pd
+import numpy as np
+import re
+from gensim.models import Word2Vec
+from sklearn.metrics.pairwise import cosine_similarity
+
+# 2. Load dataset
+df = pd.read_csv("twitter_dataset.csv")
+df = df.dropna(subset=["Text"])
+
+# 3. Clean tweets
+tweets = []
+
+for tweet in df["Text"]:
+    tweet = tweet.lower()
+    tweet = re.sub(r"[^a-z\s]", "", tweet)
+    tweets.append(tweet.split())
+
+# 4. Train CBOW model
+cbow = Word2Vec(
+    sentences=tweets,
+    vector_size=100,
+    window=5,
+    min_count=2,
+    sg=0,
+    epochs=10
+)
+
+# 5. Convert tweets into vectors
+tweet_vectors = []
+
+for tweet in tweets:
+    words = [cbow.wv[word] for word in tweet if word in cbow.wv]
+
+    if len(words) > 0:
+        tweet_vectors.append(np.mean(words, axis=0))
+    else:
+        tweet_vectors.append(np.zeros(100))
+
+tweet_vectors = np.array(tweet_vectors)
+
+# 6. Enter a tweet number
+tweet_no = 0
+
+# 7. Calculate similarity
+similarity = cosine_similarity(
+    [tweet_vectors[tweet_no]],
+    tweet_vectors
+)[0]
+
+# 8. Get top 5 similar tweets
+similar_indices = np.argsort(similarity)[::-1][1:6]
+
+# 9. Display recommendations
+print("Original Tweet:")
+print(df["Text"].iloc[tweet_no])
+
+print("\nRecommended Tweets:")
+
+for index in similar_indices:
+    print(df["Text"].iloc[index])
+    print("Similarity:", similarity[index])
