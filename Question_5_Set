@@ -1,0 +1,102 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras import layers, models
+from tensorflow.keras.utils import to_categorical
+
+# ==========================================
+# 1. SETUP & DATA LOADING (Default: 5C Fashion MNIST)
+# ==========================================
+print("Loading dataset...")
+(X_train, y_train), (X_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
+# NOTE FOR 5A (Caltech-101) & 5B (Intel Image):
+# Replace the lines above with your local directory loading:
+# train_ds = tf.keras.preprocessing.image_dataset_from_directory('path/to/train', image_size=(96, 96))
+# test_ds = tf.keras.preprocessing.image_dataset_from_directory('path/to/test', image_size=(96, 96))
+
+# Subset for quick execution
+X_train, y_train = X_train[:5000], y_train[:5000]
+X_test, y_test = X_test[:1000], y_test[:1000]
+
+# Preprocessing: Convert grayscale to 3-channel RGB & normalize
+X_train = np.stack((X_train,) * 3, axis=-1)
+X_test = np.stack((X_test,) * 3, axis=-1)
+X_train = tf.image.resize(X_train, (96, 96)) / 255.0
+X_test = tf.image.resize(X_test, (96, 96)) / 255.0
+
+num_classes = 10
+y_train_cat = to_categorical(y_train, num_classes)
+y_test_cat = to_categorical(y_test, num_classes)
+
+# ==========================================
+# 2. CHOOSE PRE-TRAINED MODEL & ARCHITECTURE
+# ==========================================
+# Using MobileNetV2 (Transfer Learning)
+base_model = MobileNetV2(input_shape=(96, 96, 3), include_top=False, weights='imagenet')
+
+# Freeze base layers
+base_model.trainable = False
+
+# Add custom classification layers
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dropout(0.2),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(num_classes, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# ==========================================
+# 3. TRAINING & COMPUTING LOSS (Frozen Base)
+# ==========================================
+print("\n--- Training Model ---")
+history = model.fit(
+    X_train, y_train_cat,
+    validation_data=(X_test, y_test_cat),
+    epochs=3,
+    batch_size=32
+)
+
+# ==========================================
+# 4. FINE-TUNING THE MODEL
+# ==========================================
+base_model.trainable = True
+for layer in base_model.layers[:-20]:  # Freeze lower layers, unfreeze top 20
+    layer.trainable = False
+
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+print("\n--- Fine-Tuning Model ---")
+history_fine = model.fit(
+    X_train, y_train_cat,
+    validation_data=(X_test, y_test_cat),
+    epochs=2,
+    batch_size=32
+)
+
+# ==========================================
+# 5. EVALUATION & VISUALIZATION
+# ==========================================
+loss, acc = model.evaluate(X_test, y_test_cat)
+print(f"\nFinal Evaluation Loss: {loss:.4f} | Accuracy: {acc * 100:.2f}%")
+
+# Visualize Predictions
+predictions = model.predict(X_test[:5])
+predicted_labels = np.argmax(predictions, axis=1)
+
+plt.figure(figsize=(10, 4))
+for i in range(5):
+    plt.subplot(1, 5, i + 1)
+    plt.imshow(X_test[i])
+    plt.title(f"Pred: {predicted_labels[i]}\nTrue: {y_test[i]}")
+    plt.axis('off')
+plt.tight_layout()
+plt.show()
