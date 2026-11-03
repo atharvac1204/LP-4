@@ -1,0 +1,208 @@
+1A:
+
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+# 1. Load dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+# 2. Normalize data
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# 3. Build model
+model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+# 4. Compile model
+model.compile(
+    optimizer=tf.keras.optimizers.SGD(),
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# 5. Train model
+history = model.fit(
+    x_train, y_train,
+    epochs=11,
+    validation_data=(x_test, y_test)
+)
+
+# 6. Evaluate model
+loss, accuracy = model.evaluate(x_test, y_test)
+print("Test Accuracy:", accuracy)
+
+# 7. Plot loss
+plt.plot(history.history['loss'])
+plt.title("Training Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.show()
+
+# 8. Plot accuracy
+plt.plot(history.history['accuracy'])
+plt.title("Training Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.show()
+
+1B:
+
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+# 1. Load dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
+
+# 2. Normalize data
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# 3. Build the neural network
+model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(28, 28)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+# 4. Compile the model
+model.compile(
+    optimizer='sgd',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# 5. Train the model
+history = model.fit(x_train, y_train, epochs=11)
+
+# 6. Evaluate the model
+loss, accuracy = model.evaluate(x_test, y_test)
+print("Test Accuracy:", accuracy)
+
+# 7. Plot training loss
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+
+# 8. Plot training accuracy
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.show()
+
+
+1C:
+
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+# 1. Load dataset
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+
+# 2. Normalize data
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# 3. Build the neural network
+model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(32, 32, 3)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+# 4. Compile the model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# 5. Train the model
+history = model.fit(x_train, y_train, epochs=11)
+
+# 6. Evaluate the model
+loss, accuracy = model.evaluate(x_test, y_test)
+print("Test Accuracy:", accuracy)
+
+# 7. Plot training loss
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+
+# 8. Plot training accuracy
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.show()
+
+
+
+1E:
+
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# 1. Load dataset
+train_data = pd.read_csv('sign_mnist_train.csv')
+test_data = pd.read_csv('sign_mnist_test.csv')
+
+# 2. Separate features and labels
+x_train = train_data.drop('label', axis=1).values
+y_train = train_data['label'].values
+
+x_test = test_data.drop('label', axis=1).values
+y_test = test_data['label'].values
+
+# 3. Normalize data
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# 4. Build the neural network
+model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(input_shape=(784,)),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(24, activation='softmax')
+])
+
+# 5. Compile the model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# 6. Train the model
+history = model.fit(x_train, y_train, epochs=11)
+
+# 7. Evaluate the model
+loss, accuracy = model.evaluate(x_test, y_test)
+print("Test Accuracy:", accuracy)
+
+# 8. Plot training loss
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show()
+
+# 9. Plot training accuracy
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.show()
+
